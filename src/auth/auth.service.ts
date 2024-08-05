@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -10,6 +11,8 @@ import PrismaService from 'src/prisma/prisma.service';
 import UpdateAuthDto from './dto/signinAuth.dto';
 import AuthDto from './dto/signupAuth.dto';
 import { RefreshTokenDto } from './dto/refreshtoken.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export default class AuthService {
@@ -106,6 +109,43 @@ export default class AuthService {
       return this.signTokens(user.id, user.email);
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+
+    if (!user) {
+      throw new NotFoundException('User with this email does not exist.');
+    }
+
+    const token = await this.jwtService.signAsync(
+      { userId: user.id },
+      { secret: this.configService.get<string>('JWT_SECRET'), expiresIn: '1h' }
+    );
+
+    
+    console.log(`Password reset token (send this to user's email): ${token}`);
+  }
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    try {
+      const payload = await this.jwtService.verifyAsync(dto.token, {
+        secret: this.configService.get<string>('JWT_SECRET'),
+      });
+
+      const user = await this.prisma.user.findUnique({ where: { id: payload.userId } });
+
+      if (!user) {
+        throw new NotFoundException('User not found.');
+      }
+
+      const hashedPassword = await bcrypt.hash(dto.newPassword, this.saltRounds);
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashedPassword },
+      });
+    } catch (error) {
+      throw new UnauthorizedException('Invalid or expired token.');
     }
   }
 }

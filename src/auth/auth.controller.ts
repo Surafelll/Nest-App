@@ -5,6 +5,8 @@ import AuthDto from './dto/signupAuth.dto';
 import UpdateAuthDto from './dto/signinAuth.dto';
 import  AccessTokenResponse  from './accessTokenResponse';
 import { RefreshTokenDto } from './dto/refreshtoken.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export default class AuthController {
@@ -31,5 +33,16 @@ export default class AuthController {
   async refreshToken(@Body() refreshTokenDto: RefreshTokenDto) {
     return this.authService.refreshToken(refreshTokenDto);
   }
+  @Post('forgot-password')
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(forgotPasswordDto);
+  }
 
+
+  @Post('reset-password')
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    await this.authService.resetPassword(resetPasswordDto);
+  }
+
+  
 }
