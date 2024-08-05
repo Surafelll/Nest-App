@@ -42,6 +42,7 @@ export default class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     await this.authService.resetPassword(resetPasswordDto);
+    return { message: 'Password has been successfully reset.' };
   }
 
   
