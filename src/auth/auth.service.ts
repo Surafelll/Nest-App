@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import PrismaService from 'src/prisma/prisma.service';
 import UpdateAuthDto from './dto/signinAuth.dto';
 import AuthDto from './dto/signupAuth.dto';
+import { RefreshTokenDto } from './dto/refreshtoken.dto';
 
 @Injectable()
 export default class AuthService {
@@ -57,6 +58,8 @@ export default class AuthService {
       throw new Error('An error occurred while signing in');
     }
   }
+  
+
   private async signToken(
     userId: number,
     email: string,
@@ -68,5 +71,10 @@ export default class AuthService {
       secret,
     });
     return { access_token: token };
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDto;
+    
   }
 }
