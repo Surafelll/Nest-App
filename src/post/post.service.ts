@@ -16,6 +16,7 @@ export class PostService {
     try {
       return await this.prisma.post.create({
         data: {
+          
           text: dto.text,
           title: dto.title,
           rating:dto.rating,

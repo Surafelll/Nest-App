@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger'
-
+import { StartsWithHash } from 'src/Comp/decorators/starts-with-hash.decorator';
 export default class CreatedPost {
 
   @ApiProperty({
@@ -28,7 +28,8 @@ export default class CreatedPost {
 
   @ApiProperty({
   })
-  hashtag:string
+  @StartsWithHash()
+  Hashtag:string
 
   @ApiProperty({
   })

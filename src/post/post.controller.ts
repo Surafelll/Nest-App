@@ -28,6 +28,8 @@ export class PostController {
   createPost(@Body() dto: PostDto) {
     return this.postService.createPost(dto);
   }
+ 
+
 
   @Delete(':id')
   @ApiOkResponse({ description: 'Post deleted successfully.' })
@@ -50,4 +52,5 @@ export class PostController {
   async getAllPosts() {
     return this.postService.getAllPosts();
   }
+  
 }
