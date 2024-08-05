@@ -21,6 +21,7 @@ model User {
   fullname  String
   First_name String?
   Last_name String?
+  refreshToken String?
   posts   Post[]
   profile Profile?
   createdAt DateTime @default(now())

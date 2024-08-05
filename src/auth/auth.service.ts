@@ -19,7 +19,8 @@ export default class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
-  async signup(dto: AuthDto): Promise<{ access_token: string }> {
+
+  async signup(dto: AuthDto): Promise<{ access_token: string; refresh_token: string }> {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, this.saltRounds);
       const user = await this.prisma.user.create({
@@ -28,9 +29,10 @@ export default class AuthService {
           password: hashedPassword,
           username: dto.username,
           fullname: dto.fullname, 
+          
         },
       });
-      return this.signToken(user.id, user.email);
+      return this.signTokens(user.id, user.email);
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ForbiddenException('Credentials already taken');
@@ -38,7 +40,8 @@ export default class AuthService {
       throw new Error('An error occurred while creating the user');
     }
   }
-  async signin(dto: UpdateAuthDto): Promise<{ access_token: string }> {
+
+  async signin(dto: UpdateAuthDto): Promise<{ access_token: string; refresh_token: string }> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
@@ -50,7 +53,7 @@ export default class AuthService {
       if (!isPasswordValid) {
         throw new UnauthorizedException('Credentials incorrect');
       }
-      return this.signToken(user.id, user.email);
+      return this.signTokens(user.id, user.email);
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
@@ -58,23 +61,51 @@ export default class AuthService {
       throw new Error('An error occurred while signing in');
     }
   }
-  
 
-  private async signToken(
+  private async signTokens(
     userId: number,
     email: string,
-  ): Promise<{ access_token: string }> {
+  ): Promise<{ access_token: string; refresh_token: string }> {
     const payload = { sub: userId, email };
     const secret = this.configService.get<string>('JWT_SECRET');
-    const token = await this.jwtService.signAsync(payload, {
+    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    const accessToken = await this.jwtService.signAsync(payload, {
       expiresIn: '15m',
       secret,
     });
-    return { access_token: token };
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      expiresIn: '7d',
+      secret: refreshTokenSecret,
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken },
+    });
+
+    return { access_token: accessToken, refresh_token: refreshToken };
   }
 
   async refreshToken(refreshTokenDto: RefreshTokenDto) {
     const { refreshToken } = refreshTokenDto;
-    
+    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+
+    try {
+      const payload = await this.jwtService.verifyAsync(refreshToken, { secret: refreshTokenSecret });
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.sub },
+      });
+
+      if (!user || user.refreshToken !== refreshToken) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      return this.signTokens(user.id, user.email);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 }
