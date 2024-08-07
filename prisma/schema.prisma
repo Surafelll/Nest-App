@@ -26,6 +26,7 @@ model User {
   profile Profile?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  deletedAt DateTime? 
   @@map("users")
 }
 model Profile{
@@ -39,6 +40,7 @@ model Profile{
   user User @relation(fields: [userId], references: [id])
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+   deletedAt DateTime? 
     @@map("profiles")
 }
 model Post{
@@ -46,11 +48,12 @@ model Post{
   title     String
   text   String?
   Description String?
-  Hashtag String?
+  Hashtag String []
   rating String
   author     User       @relation(fields: [authorId], references: [id])
   authorId Int
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
+   deletedAt DateTime? 
   @@map("posts")
 }

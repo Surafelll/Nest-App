@@ -21,7 +21,8 @@ export class PostService {
           title: dto.title,
           rating:dto.rating,
           Description:dto.Description,
-          Hashtag: dto.Hashtag,
+          Hashtag: dto.hashtags,
+          
           author: {
             connect: { id: Number(dto.authorId) },
           },
@@ -33,7 +34,9 @@ export class PostService {
   }
 
   async getAllPosts() {
-    const allPosts = await this.prisma.post.findMany();
+    const allPosts = await this.prisma.post.findMany({
+      // where : {deletedAt :null }
+    });
 
     if (allPosts.length === 0) {
       throw new NotFoundException('No posts found');
@@ -47,15 +50,15 @@ export class PostService {
       where: { id: postId },
       include: { author: true },
     });
-
+  
     if (!post) {
       throw new NotFoundException('Post not found');
     }
-
+  
     if (post.author.id !== incomingId) {
       throw new ForbiddenException('You are forbidden to delete this post');
     }
-
+  
     await this.prisma.post.delete({ where: { id: postId } });
     return { message: 'Post deleted successfully' };
   }
@@ -88,8 +91,8 @@ export class PostService {
     if (dto.Description) {
       updateData.Description = dto.Description;
     }
-    if (dto.Hashtag) {
-      updateData.Hashtag = dto.Hashtag;
+    if (dto.hashtags) {
+      updateData.hashtags = dto.hashtags;
     }
     return await this.prisma.post.update({
       where: { id: postId },

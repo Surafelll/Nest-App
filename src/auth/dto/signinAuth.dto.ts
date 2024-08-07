@@ -5,7 +5,7 @@ import AuthDto from './signupAuth.dto'
 
 
 export default class UpdateAuthDto extends PartialType(
-  OmitType(AuthDto, ['fullname', 'email'] as const),
+  OmitType(AuthDto, ['fullname',] as const),
 ) {
-  email: any
+ 
 }

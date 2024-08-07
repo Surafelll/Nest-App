@@ -4,7 +4,7 @@ export default interface JwtPayload {
     email: string;
     fullname: String;
     First_name: string;
-    Last_name:string
+    Last_name:string;
   
     
   }

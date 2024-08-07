@@ -8,13 +8,18 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import UserDecorator from 'src/Comp/decorators/userDecorators';
 import ProfileService from './profile.service';
 import ProfileDto from './dto/createProfile.dto';
 import UpdateProfileDto from './dto/updateProfile.dto';
 import CreatedProfile from './createdProfileResponse';
 
+
+@ApiTags('Profile')
+@ApiBearerAuth('JWT-auth')
+
+@UseGuards(AuthGuard('jwt'))
 @Controller('profiles')
 @UseGuards(AuthGuard('jwt'))
 export default class ProfileController {

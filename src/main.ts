@@ -27,10 +27,14 @@ async function bootstrap() {
   app.setGlobalPrefix('api')
 
   const config = new DocumentBuilder()
-    .setTitle('Posts example')
-    .setDescription('The Posts  API description')
+    .setTitle('Post User and Profile Management')
+    .setDescription('Let The Hunt Begin ')
     .setVersion('1.0')
-    .addTag('posts')
+    // .addTag('Api')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'JWT-auth',  // Name the security scheme as 'JWT-auth'
+    )
     .build()
   const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('swagger', app, document)

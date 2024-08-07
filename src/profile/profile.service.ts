@@ -24,6 +24,7 @@ export default class ProfileService {
           connect: { id: Number(dto.userId) },
         },
       },
+   
     });
 
     return this.mapToCreatedProfile(newProfile);

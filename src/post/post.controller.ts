@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { UserDecorator } from 'src/Comp/decorators/userDecorators';
 
 import { PostService } from './post.service';
@@ -18,6 +18,10 @@ import CreatedPost from './createdPostResponse';
 import PostDto from './dto/createPost.dto';
 import UpdatePostDto from './dto/updatePost.dto';
 
+@ApiTags('Post')
+
+@ApiTags('Profile')
+@ApiBearerAuth('JWT-auth')
 @Controller('posts')
 @UseGuards(AuthGuard('jwt'))
 export class PostController {

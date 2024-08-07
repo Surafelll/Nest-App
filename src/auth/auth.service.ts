@@ -10,20 +10,21 @@ import * as bcrypt from 'bcrypt';
 import PrismaService from 'src/prisma/prisma.service';
 import UpdateAuthDto from './dto/signinAuth.dto';
 import AuthDto from './dto/signupAuth.dto';
-import { RefreshTokenDto } from './dto/refreshtoken.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import AccessTokenResponse from './accessTokenResponse';
 
 @Injectable()
 export default class AuthService {
   private readonly saltRounds = 10;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
   ) {}
 
-  async signup(dto: AuthDto): Promise<{ access_token: string; refresh_token: string }> {
+  async signup(dto: AuthDto): Promise<AccessTokenResponse> {
     try {
       const hashedPassword = await bcrypt.hash(dto.password, this.saltRounds);
       const user = await this.prisma.user.create({
@@ -31,11 +32,11 @@ export default class AuthService {
           email: dto.email,
           password: hashedPassword,
           username: dto.username,
-          fullname: dto.fullname, 
-          
+          fullname: dto.fullname,
         },
       });
-      return this.signTokens(user.id, user.email);
+      const accessToken = await this.generateAccessToken(user.id, user.email);
+      return { access_token: accessToken };
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ForbiddenException('Credentials already taken');
@@ -43,11 +44,13 @@ export default class AuthService {
       throw new Error('An error occurred while creating the user');
     }
   }
+  
 
-  async signin(dto: UpdateAuthDto): Promise<{ access_token: string; refresh_token: string }> {
+  async signin(dto: UpdateAuthDto): Promise<AccessTokenResponse> {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
+        
       });
       if (!user) {
         throw new UnauthorizedException('Credentials incorrect');
@@ -56,7 +59,9 @@ export default class AuthService {
       if (!isPasswordValid) {
         throw new UnauthorizedException('Credentials incorrect');
       }
-      return this.signTokens(user.id, user.email);
+      const accessToken = await this.generateAccessToken(user.id, user.email);
+      return { access_token: accessToken, };
+      
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
@@ -65,81 +70,37 @@ export default class AuthService {
     }
   }
 
-  private async signTokens(
-    userId: number,
-    email: string,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  private async generateAccessToken(userId: number, email: string): Promise<string> {
     const payload = { sub: userId, email };
     const secret = this.configService.get<string>('JWT_SECRET');
-    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-
-    const accessToken = await this.jwtService.signAsync(payload, {
+    return this.jwtService.signAsync(payload, {
       expiresIn: '15m',
       secret,
     });
-
-    const refreshToken = await this.jwtService.signAsync(payload, {
-      expiresIn: '7d',
-      secret: refreshTokenSecret,
-    });
-
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { refreshToken },
-    });
-
-    return { access_token: accessToken, refresh_token: refreshToken };
   }
 
-  async refreshToken(refreshTokenDto: RefreshTokenDto) {
-    const { refreshToken } = refreshTokenDto;
-    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-
-    try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, { secret: refreshTokenSecret });
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-      });
-
-      if (!user || user.refreshToken !== refreshToken) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      return this.signTokens(user.id, user.email);
-    } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
-    }
-  }
   async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-
     if (!user) {
       throw new NotFoundException('User with this email does not exist.');
     }
-
     const token = await this.jwtService.signAsync(
       { userId: user.id },
       { secret: this.configService.get<string>('JWT_SECRET'), expiresIn: '1h' }
     );
-
-    
     console.log(`Password reset token (send this to user's email): ${token}`);
   }
+
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
     try {
       const payload = await this.jwtService.verifyAsync(dto.token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
-
       const user = await this.prisma.user.findUnique({ where: { id: payload.userId } });
-
       if (!user) {
         throw new NotFoundException('User not found.');
       }
-
       const hashedPassword = await bcrypt.hash(dto.newPassword, this.saltRounds);
-
       await this.prisma.user.update({
         where: { id: user.id },
         data: { password: hashedPassword },

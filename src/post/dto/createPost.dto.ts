@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ArrayMinSize, ArrayNotEmpty, IsNotEmpty, IsString, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export default class PostDto {
@@ -35,17 +35,21 @@ export default class PostDto {
   @IsString()
   Description: string;
 
-  @ApiProperty({
-    description: 'hashtag',
-    example: '#computer',
-  })
-  @IsString()
-  Hashtag: string;
-
+  
   @ApiProperty({
     description: 'rating',
     example: 'give rating for current post',
   })
   @IsString()
   rating: string;
+
+  @ApiProperty({
+    description: 'hashtag',
+    example: '#computer',
+  })
+
+  
+  @ArrayMinSize(0)
+  @Matches(/^#.+$/, { each: true, message: 'Each hashtag must start with a # symbol' })
+  hashtags: string[];
 }

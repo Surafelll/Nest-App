@@ -6,8 +6,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiCreatedResponse, ApiOkResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import AuthDto from 'src/auth/dto/signupAuth.dto';
 import AccessTokenResponseDto from 'src/auth/accessTokenResponse';
 import AuthService from 'src/auth/auth.service';
@@ -15,7 +16,11 @@ import UserService from './user.service';
 import UpdateUserDto from './dto/updateUser.dto';
 import CreatedUser from './createdUserResponse';
 import UserDecorator from 'src/Comp/decorators/userDecorators';
+import { AuthGuard } from '@nestjs/passport';
 
+@ApiTags('User')
+@ApiBearerAuth('JWT-auth')
+@UseGuards(AuthGuard('jwt'))
 @Controller('users')
 export default class UserController {
   constructor(
@@ -30,20 +35,19 @@ export default class UserController {
   async signup(@Body() dto: AuthDto): Promise<{ access_token: string }> {
     return this.authService.signup(dto);
   }
-
+  
   @Delete(':id')
   @ApiOkResponse({
-    description: 'User deleted successfully.',
+    description: 'Are You Sure Wanna Delete.',
   })
   async delete(
     @Param('id') id: string,
     @UserDecorator() user: any,
   ): Promise<{ message: string }> {
     const userId = parseInt(id, 10);
-    await this.userService.deleteUser(userId, user.sub);
-    return { message: 'User deleted successfully.' };
+    return this.userService.deleteUser(userId, user.sub);
   }
-
+  
   @Get()
   @ApiOkResponse({
     type: [CreatedUser],
@@ -51,7 +55,7 @@ export default class UserController {
   async getAllPosts(): Promise<CreatedUser[]> {
     return this.userService.getAllUsers();
   }
-
+ 
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -60,5 +64,14 @@ export default class UserController {
   ): Promise<CreatedUser> {
     const userId = parseInt(id, 10);
     return this.userService.updateUser(userId, dto, user.sub);
+  }
+
+  @Patch('restore/:id')
+  async restoreUser(
+    @Param('id') id: string,
+    @UserDecorator() user: any
+  ): Promise<{ message: string }> {
+    const userId = parseInt(id, 10);
+    return this.userService.restoreUser(userId, user.sub);
   }
 }

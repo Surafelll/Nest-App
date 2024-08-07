@@ -1,11 +1,9 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import PrismaService from 'src/prisma/prisma.service';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+
+import AuthDto from 'src/auth/dto/signupAuth.dto';
 import UpdateUserDto from './dto/updateUser.dto';
+import CreatedUser from './createdUserResponse';
+import PrismaService from 'src/prisma/prisma.service';
 
 @Injectable()
 export default class UserService {
@@ -29,24 +27,9 @@ export default class UserService {
         throw new ForbiddenException('You are forbidden to delete this user');
       }
 
-      if (user.profile) {
-        await this.prisma.profile.delete({
-          where: { id: user.profile.id },
-        });
-      }
-
-      if (user.posts.length > 0) {
-        await Promise.all(
-          user.posts.map(post =>
-            this.prisma.post.delete({
-              where: { id: post.id },
-            }),
-          ),
-        );
-      }
-
-      await this.prisma.user.delete({
+      await this.prisma.user.update({
         where: { id: userId },
+        data: { deletedAt: new Date() },
       });
 
       return { message: 'User deleted successfully' };
@@ -59,72 +42,59 @@ export default class UserService {
     }
   }
 
-  async getAllUsers(): Promise<any[]> {
-    try {
-      const allUsers = await this.prisma.user.findMany();
+  async getAllUsers(): Promise<CreatedUser[]> {
+    const allUsers = await this.prisma.user.findMany({
+      where: { deletedAt: null },
+    });
 
-      if (allUsers.length === 0) {
-        throw new NotFoundException('No users found');
-      }
-
-      return allUsers;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else {
-        throw new Error('An error occurred while fetching users');
-      }
+    if (allUsers.length === 0) {
+      throw new NotFoundException('No users found');
     }
+
+    return allUsers;
   }
 
-  async updateUser(userId: number, dto: UpdateUserDto, incomingId: number) {
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
+  async updateUser(userId: number, dto: UpdateUserDto, incomingId: number): Promise<CreatedUser> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
 
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (user.id !== incomingId) {
-        throw new UnauthorizedException('You are not authorized to update this user');
-      }
-
-      const updateData: Partial<UpdateUserDto> = {};
-
-      if (dto.First_name) {
-        updateData.First_name = dto.First_name;
-      }
-      if (dto.Last_name) {
-        updateData.Last_name = dto.Last_name;
-      }
-      if (dto.email) {
-        updateData.email = dto.email;
-      }
-      if (dto.username) {
-        updateData.username = dto.username;
-      }
-      if (dto.fullname) {
-        updateData.fullname = dto.fullname;
-      }
-      if (dto.password) {
-        updateData.password = dto.password;
-      }
-
-      return await this.prisma.user.update({
-        where: { id: userId },
-        data: updateData,
-      });
-    } catch (error) {
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof NotFoundException
-      ) {
-        throw error;
-      } else {
-        throw new Error('An error occurred while updating the user');
-      }
+    if (!user) {
+      throw new NotFoundException('User not found');
     }
+
+    if (user.id !== incomingId) {
+      throw new ForbiddenException('You are forbidden to update this user');
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...dto,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async restoreUser(userId: number, incomingId: number): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.deletedAt === null) {
+      throw new NotFoundException('User not found or not deleted');
+    }
+
+    if (user.id !== incomingId) {
+      throw new ForbiddenException('You are forbidden to restore this user');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: null },
+    });
+
+    return { message: 'User restored successfully' };
   }
 }
