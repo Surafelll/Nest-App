@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import AuthService from './auth.service';
 import AuthDto from './dto/signupAuth.dto';
@@ -7,12 +7,14 @@ import AccessTokenResponse from './accessTokenResponse';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import CreatedUser from 'src/user/createdUserResponse';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { NotDeletedUserGuard } from './User Guard/NotDeletedUserGuard';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('auth')
 @Controller('auth')
 export default class AuthController {
   constructor(private readonly authService: AuthService) {}
-
+  
   @Post('signup')
   @ApiResponse({
     content: {
@@ -33,6 +35,7 @@ export default class AuthController {
   })
   async signup(@Body() dto: AuthDto): Promise<AccessTokenResponse> {
     return this.authService.signup(dto);
+   
   }
 
   @Post('signin')
@@ -57,12 +60,14 @@ export default class AuthController {
     return this.authService.signin(dto);
   }
   @ApiBearerAuth('JWT-auth')
+  @UseGuards(NotDeletedUserGuard)
   @Post('forgot-password')
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     await this.authService.forgotPassword(forgotPasswordDto);
   }
 
   @ApiBearerAuth('JWT-auth')
+  @UseGuards(NotDeletedUserGuard)
   @Post('reset-password')
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     await this.authService.resetPassword(resetPasswordDto);

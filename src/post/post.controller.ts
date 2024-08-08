@@ -17,7 +17,8 @@ import { PostService } from './post.service';
 import CreatedPost from './createdPostResponse';
 import PostDto from './dto/createPost.dto';
 import UpdatePostDto from './dto/updatePost.dto';
-
+import { NotDeletedUserGuard } from 'src/auth/User Guard/NotDeletedUserGuard';
+@UseGuards(NotDeletedUserGuard)
 @ApiTags('Post')
 
 @ApiTags('Profile')

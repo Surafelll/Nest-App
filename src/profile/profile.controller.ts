@@ -14,8 +14,10 @@ import ProfileService from './profile.service';
 import ProfileDto from './dto/createProfile.dto';
 import UpdateProfileDto from './dto/updateProfile.dto';
 import CreatedProfile from './createdProfileResponse';
+import { NotDeletedUserGuard } from 'src/auth/User Guard/NotDeletedUserGuard';
 
 
+@UseGuards(NotDeletedUserGuard)
 @ApiTags('Profile')
 @ApiBearerAuth('JWT-auth')
 

@@ -35,7 +35,7 @@ export default class AuthService {
           fullname: dto.fullname,
         },
       });
-      const accessToken = await this.generateAccessToken(user.id, user.email);
+      const accessToken = await this.generateAccessToken(user.id, user.email,user.email);
       return { access_token: accessToken };
     } catch (error) {
       if (error.code === 'P2002') {
@@ -50,16 +50,17 @@ export default class AuthService {
     try {
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
+
         
       });
       if (!user) {
-        throw new UnauthorizedException('Credentials incorrect');
+        throw new UnauthorizedException('User incorrect');
       }
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Credentials incorrect');
+        throw new UnauthorizedException('Password incorrect');
       }
-      const accessToken = await this.generateAccessToken(user.id, user.email);
+      const accessToken = await this.generateAccessToken(user.id, user.email,user.username);
       return { access_token: accessToken, };
       
     } catch (error) {
@@ -70,14 +71,16 @@ export default class AuthService {
     }
   }
 
-  private async generateAccessToken(userId: number, email: string): Promise<string> {
-    const payload = { sub: userId, email };
+  private async generateAccessToken(userId: number, email: string,username:string): Promise<string> {
+    const payload = { sub: userId, email,username };
     const secret = this.configService.get<string>('JWT_SECRET');
     return this.jwtService.signAsync(payload, {
       expiresIn: '15m',
       secret,
     });
   }
+
+
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });

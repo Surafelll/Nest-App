@@ -17,7 +17,8 @@ import UpdateUserDto from './dto/updateUser.dto';
 import CreatedUser from './createdUserResponse';
 import UserDecorator from 'src/Comp/decorators/userDecorators';
 import { AuthGuard } from '@nestjs/passport';
-
+import { NotDeletedUserGuard } from 'src/auth/User Guard/NotDeletedUserGuard';
+@UseGuards(NotDeletedUserGuard)
 @ApiTags('User')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(AuthGuard('jwt'))
