@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
+import CustomErrorException from 'src/Comp/Erorr/CustomErrorException';
 
 @Injectable()
-export default class PrismaService extends PrismaClient {
+export default class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {
     super({
       datasources: {
@@ -13,10 +14,20 @@ export default class PrismaService extends PrismaClient {
       },
     });
   }
+
   async onModuleInit() {
-    await this.$connect();
+    try {
+      await this.$connect();
+    } catch (error) {
+      CustomErrorException.handle(error, 'Database Connection');
+    }
   }
+
   async onModuleDestroy() {
-    await this.$disconnect();
+    try {
+      await this.$disconnect();
+    } catch (error) {
+      CustomErrorException.handle(error, 'Database Disconnection');
+    }
   }
 }

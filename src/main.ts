@@ -9,6 +9,7 @@ import GlobalHttpExceptionFilter from './Comp/exception-filters/exception.filter
 
 
 
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     logger: WinstonModule.createLogger({ instance: winstonLoggerInstance }),
@@ -22,7 +23,7 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   )
-
+ 
   app.useGlobalFilters(new GlobalHttpExceptionFilter())
   app.setGlobalPrefix('api')
 

@@ -1,56 +1,60 @@
-import {
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import PrismaService from 'src/prisma/prisma.service';
 import ProfileDto from './dto/createProfile.dto';
 import UpdateProfileDto from './dto/updateProfile.dto';
-import  CreatedProfile  from './createdProfileResponse';
+import CreatedProfile from './createdProfileResponse';
+import CustomErrorException from 'src/Comp/Erorr/CustomErrorException';
 
 @Injectable()
 export default class ProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   async post(dto: ProfileDto): Promise<CreatedProfile> {
-    const newProfile = await this.prisma.profile.create({
-      data: {
-        nickname:dto.nickname,
-        category:dto.category,
-        image: dto.image,
-        location: dto.location,
-        bio: dto.bio,
-        user: {
-          connect: { id: Number(dto.userId) },
+    try {
+      const newProfile = await this.prisma.profile.create({
+        data: {
+          nickname: dto.nickname,
+          category: dto.category,
+          image: dto.image,
+          location: dto.location,
+          bio: dto.bio,
+          user: {
+            connect: { id: Number(dto.userId) },
+          },
         },
-      },
-   
-    });
+      });
 
-    return this.mapToCreatedProfile(newProfile);
+      return this.mapToCreatedProfile(newProfile);
+    } catch (error) {
+      CustomErrorException.handle(error, 'Profile Creation');
+    }
   }
 
   async deleteProfile(profileId: number, incomingId: number): Promise<{ message: string }> {
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-      include: {
-        user: true,
-      },
-    });
+    try {
+      const profile = await this.prisma.profile.findUnique({
+        where: { id: profileId },
+        include: {
+          user: true,
+        },
+      });
 
-    if (!profile) {
-      throw new NotFoundException('Profile not found');
+      if (!profile) {
+        throw new CustomErrorException('Profile not found', 404);
+      }
+
+      if (profile.user.id !== incomingId) {
+        throw new CustomErrorException('You are not authorized to delete this profile', 401);
+      }
+
+      await this.prisma.profile.delete({
+        where: { id: profileId },
+      });
+
+      return { message: 'Profile deleted successfully' };
+    } catch (error) {
+      CustomErrorException.handle(error, 'Profile Deletion');
     }
-
-    if (profile.user.id !== incomingId) {
-      throw new UnauthorizedException('You are not authorized to delete this profile');
-    }
-
-    await this.prisma.profile.delete({
-      where: { id: profileId },
-    });
-
-    return { message: 'Profile deleted successfully' };
   }
 
   async updateProfile(
@@ -58,34 +62,38 @@ export default class ProfileService {
     dto: UpdateProfileDto,
     incomingId: number,
   ): Promise<CreatedProfile> {
-    const profile = await this.prisma.profile.findUnique({
-      where: { id: profileId },
-      include: {
-        user: true,
-      },
-    });
+    try {
+      const profile = await this.prisma.profile.findUnique({
+        where: { id: profileId },
+        include: {
+          user: true,
+        },
+      });
 
-    if (!profile) {
-      throw new NotFoundException('Profile not found');
+      if (!profile) {
+        throw new CustomErrorException('Profile not found', 404);
+      }
+
+      if (profile.user.id !== incomingId) {
+        throw new CustomErrorException('You are not authorized to update this profile', 401);
+      }
+
+      const updateData = {
+        nickname: dto.nickname,
+        location: dto.location,
+        bio: dto.bio,
+        category: dto.category,
+      };
+
+      const updatedProfile = await this.prisma.profile.update({
+        where: { id: profileId },
+        data: updateData,
+      });
+
+      return this.mapToCreatedProfile(updatedProfile);
+    } catch (error) {
+      CustomErrorException.handle(error, 'Profile Update');
     }
-
-    if (profile.user.id !== incomingId) {
-      throw new UnauthorizedException('You are not authorized to update this profile');
-    }
-
-    const updateData = {
-      Nickname: dto.nickname,
-      location: dto.location,
-      bio: dto.bio,
-      category: dto.category,
-    };
-
-    const updatedProfile = await this.prisma.profile.update({
-      where: { id: profileId },
-      data: updateData,
-    });
-
-    return this.mapToCreatedProfile(updatedProfile);
   }
 
   private mapToCreatedProfile(profile: any): CreatedProfile {

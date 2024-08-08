@@ -1,10 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
@@ -14,6 +8,8 @@ import AuthDto from './dto/signupAuth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import AccessTokenResponse from './accessTokenResponse';
+import CustomErrorException from 'src/Comp/Erorr/CustomErrorException';
+
 
 @Injectable()
 export default class AuthService {
@@ -39,10 +35,7 @@ export default class AuthService {
       const accessToken = await this.generateAccessToken(user.id, user.email, user.username);
       return { access_token: accessToken };
     } catch (error) {
-      if (error.code === 'P2002') {
-        throw new ForbiddenException('Credentials already taken');
-      }
-      throw new InternalServerErrorException('An error occurred while creating the user');
+      CustomErrorException.handle(error, 'User signup');
     }
   }
 
@@ -51,20 +44,13 @@ export default class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { email: dto.email },
       });
-      if (!user) {
-        throw new UnauthorizedException('Invalid email or password');
-      }
-      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-      if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid email or password');
+      if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+        throw new CustomErrorException('Invalid email or password', 401, 'Authentication');
       }
       const accessToken = await this.generateAccessToken(user.id, user.email, user.username);
       return { access_token: accessToken };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An error occurred while signing in');
+      CustomErrorException.handle(error, 'User signin');
     }
   }
 
@@ -78,16 +64,20 @@ export default class AuthService {
   }
 
   async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) {
-      throw new NotFoundException('User with this email does not exist.');
+    try {
+      const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+      if (!user) {
+        throw new CustomErrorException('User with this email does not exist', 404, 'Forgot Password');
+      }
+      const token = await this.jwtService.signAsync(
+        { userId: user.id },
+        { secret: this.configService.get<string>('JWT_SECRET'), expiresIn: '1h' }
+      );
+      console.log(`Password reset token (send this to user's email): ${token}`);
+      // Here you should send the token to the user's email.
+    } catch (error) {
+      CustomErrorException.handle(error, 'Forgot Password');
     }
-    const token = await this.jwtService.signAsync(
-      { userId: user.id },
-      { secret: this.configService.get<string>('JWT_SECRET'), expiresIn: '1h' }
-    );
-    console.log(`Password reset token (send this to user's email): ${token}`);
-    // Here you should send the token to the user's email.
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
@@ -97,7 +87,7 @@ export default class AuthService {
       });
       const user = await this.prisma.user.findUnique({ where: { id: payload.userId } });
       if (!user) {
-        throw new NotFoundException('User not found.');
+        throw new CustomErrorException('User not found', 404, 'Reset Password');
       }
       const hashedPassword = await bcrypt.hash(dto.newPassword, this.saltRounds);
       await this.prisma.user.update({
@@ -105,10 +95,7 @@ export default class AuthService {
         data: { password: hashedPassword },
       });
     } catch (error) {
-      if (error instanceof NotFoundException || error instanceof UnauthorizedException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('An error occurred while resetting the password');
+      CustomErrorException.handle(error, 'Reset Password');
     }
   }
 }
