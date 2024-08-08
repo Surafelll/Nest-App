@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiCreatedResponse, ApiResponse, ApiTags, getSchemaPath } from '@nestjs/swagger';
 import AuthService from './auth.service';
 import AuthDto from './dto/signupAuth.dto';
@@ -14,7 +14,7 @@ import { AuthGuard } from '@nestjs/passport';
 @Controller('auth')
 export default class AuthController {
   constructor(private readonly authService: AuthService) {}
-  
+
   @Post('signup')
   @ApiResponse({
     content: {
@@ -35,7 +35,6 @@ export default class AuthController {
   })
   async signup(@Body() dto: AuthDto): Promise<AccessTokenResponse> {
     return this.authService.signup(dto);
-   
   }
 
   @Post('signin')
@@ -59,18 +58,26 @@ export default class AuthController {
   async signin(@Body() dto: UpdateAuthDto): Promise<AccessTokenResponse> {
     return this.authService.signin(dto);
   }
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(NotDeletedUserGuard)
+
   @Post('forgot-password')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(AuthGuard('jwt'), NotDeletedUserGuard)
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     await this.authService.forgotPassword(forgotPasswordDto);
   }
 
-  @ApiBearerAuth('JWT-auth')
-  @UseGuards(NotDeletedUserGuard)
   @Post('reset-password')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(AuthGuard('jwt'), NotDeletedUserGuard)
   async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     await this.authService.resetPassword(resetPasswordDto);
     return { message: 'Password has been successfully reset.' };
+  }
+
+  @Get('protected-route')
+  @ApiBearerAuth('JWT-auth')
+  @UseGuards(AuthGuard('jwt'), NotDeletedUserGuard)
+  async getProtectedRoute() {
+    return { message: 'This is a protected route' };
   }
 }

@@ -29,7 +29,7 @@ export default class UserController {
     private readonly userService: UserService,
     private readonly authService: AuthService,
   ) {}
-  @UseGuards(NotDeletedUserGuard)
+  
   @Post('')
   @ApiCreatedResponse({
     type: AccessTokenResponseDto,
@@ -37,11 +37,12 @@ export default class UserController {
   async signup(@Body() dto: AuthDto): Promise<{ access_token: string }> {
     return this.authService.signup(dto);
   }
-  @UseGuards(NotDeletedUserGuard)
+ 
   @Delete(':id')
   @ApiOkResponse({
     description: 'Are You Sure Wanna Delete.',
   })
+  @UseGuards(NotDeletedUserGuard)
   async delete(
     @Param('id') id: string,
     @UserDecorator() user: any,
@@ -49,16 +50,21 @@ export default class UserController {
     const userId = parseInt(id, 10);
     return this.userService.deleteUser(userId, user.sub);
   }
-  @UseGuards(NotDeletedUserGuard)
+
   @Get()
   @ApiOkResponse({
     type: [CreatedUser],
   })
-  async getAllPosts(): Promise<CreatedUser[]> {
+  @UseGuards(NotDeletedUserGuard)
+  async getAllUsers(): Promise<CreatedUser[]> {
     return this.userService.getAllUsers();
   }
-  @UseGuards(NotDeletedUserGuard)
+  
   @Patch(':id')
+  @ApiOkResponse({
+    type: CreatedUser,
+  })
+  @UseGuards(NotDeletedUserGuard)
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
@@ -67,8 +73,12 @@ export default class UserController {
     const userId = parseInt(id, 10);
     return this.userService.updateUser(userId, dto, user.sub);
   }
-  @UseGuards(DeletedUserGuard)
+  
   @Patch('restore/:id')
+  @UseGuards(DeletedUserGuard)
+  @ApiOkResponse({
+    description: 'User Restored',
+  })
   async restoreUser(
     @Param('id') id: string,
     @UserDecorator() user: any

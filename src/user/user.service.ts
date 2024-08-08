@@ -1,5 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-
+import { Injectable, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import AuthDto from 'src/auth/dto/signupAuth.dto';
 import UpdateUserDto from './dto/updateUser.dto';
 import CreatedUser from './createdUserResponse';
@@ -10,50 +9,46 @@ export default class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
   async deleteUser(userId: number, incomingId: number): Promise<{ message: string }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: true,
+        posts: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (user.id !== incomingId) {
+      throw new ForbiddenException('You are forbidden to delete this user');
+    }
+
     try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          profile: true,
-          posts: true,
-        },
-      });
-
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (user.id !== incomingId) {
-        throw new ForbiddenException('You are forbidden to delete this user');
-      }
-
       await this.prisma.user.update({
         where: { id: userId },
         data: { deletedAt: new Date() },
       });
-
-      return { message: 'User deleted successfully' };
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      } else {
-        throw new Error('An error occurred while deleting the user');
-      }
+      throw new InternalServerErrorException('An error occurred while deleting the user');
     }
+
+    return { message: 'User deleted successfully' };
   }
 
   async getAllUsers(): Promise<CreatedUser[]> {
     const allUsers = await this.prisma.user.findMany({
-      where: { deletedAt: null },
+      where: { deletedAt: null },  // Only return users who are not deleted
     });
-
+  
     if (allUsers.length === 0) {
       throw new NotFoundException('No users found');
     }
-
+  
     return allUsers;
   }
-
+  
   async updateUser(userId: number, dto: UpdateUserDto, incomingId: number): Promise<CreatedUser> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
