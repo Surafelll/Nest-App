@@ -42,15 +42,14 @@ export default class CustomErrorException extends HttpException {
             property,
           );
       }
-    } else if (error instanceof CustomErrorException) {
-      throw error;
-    } else if (error.message === ErrorMessages.UNAUTHORIZED) {
-      throw new CustomErrorException(
-        ErrorMessages.UNAUTHORIZED,
-        HttpStatus.UNAUTHORIZED,
-        property,
-      );
-    } else if (error.message === ErrorMessages.FORBIDDEN) {
+    }else if (error.message === ErrorMessages.UNAUTHORIZED) {
+        const customErrorMessage = 'This is my custom unauthorized error message';
+        throw new CustomErrorException(
+          customErrorMessage,
+          HttpStatus.UNAUTHORIZED,
+          property,
+        );
+      }else if (error.message === ErrorMessages.FORBIDDEN) {
       throw new CustomErrorException(
         ErrorMessages.FORBIDDEN,
         HttpStatus.FORBIDDEN,
@@ -140,7 +139,17 @@ export default class CustomErrorException extends HttpException {
         HttpStatus.UNAUTHORIZED,
         property,
       );
-    } else {
+    }
+    
+    else if (error.message === ErrorMessages.TEST){
+
+        throw new CustomErrorException(
+            ErrorMessages.TEST,
+            HttpStatus.UNAUTHORIZED,
+            property,
+        )
+    }
+    else {
       throw new CustomErrorException(
         ErrorMessages.UNKNOWN_ERROR,
         HttpStatus.INTERNAL_SERVER_ERROR,

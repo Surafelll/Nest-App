@@ -21,7 +21,7 @@ export default class UserService {
       });
 
       if (!user) {
-        throw new CustomErrorException('User not found', 404);
+        throw new CustomErrorException( 'User not found', 404);
       }
 
       if (user.id !== incomingId) {

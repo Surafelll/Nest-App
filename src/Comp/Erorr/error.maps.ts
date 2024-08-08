@@ -20,5 +20,6 @@ export default {
     PAYMENT_REQUIRED: 'Payment is required to access this resource',
     ACCOUNT_LOCKED: 'Your account has been locked, please contact support',
     INVALID_CREDENTIALS: 'Invalid username or password',
+    TEST:'TEST'
   };
   
