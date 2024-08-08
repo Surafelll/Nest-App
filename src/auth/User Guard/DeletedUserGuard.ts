@@ -6,6 +6,6 @@ export class DeletedUserGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    return user && user.deletedAt !== null;
+    return user && user.deletedAt === null;
   }
 }

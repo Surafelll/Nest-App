@@ -18,7 +18,8 @@ import CreatedUser from './createdUserResponse';
 import UserDecorator from 'src/Comp/decorators/userDecorators';
 import { AuthGuard } from '@nestjs/passport';
 import { NotDeletedUserGuard } from 'src/auth/User Guard/NotDeletedUserGuard';
-@UseGuards(NotDeletedUserGuard)
+import { DeletedUserGuard } from 'src/auth/User Guard/DeletedUserGuard';
+
 @ApiTags('User')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(AuthGuard('jwt'))
@@ -28,7 +29,7 @@ export default class UserController {
     private readonly userService: UserService,
     private readonly authService: AuthService,
   ) {}
-
+  @UseGuards(NotDeletedUserGuard)
   @Post('')
   @ApiCreatedResponse({
     type: AccessTokenResponseDto,
@@ -36,7 +37,7 @@ export default class UserController {
   async signup(@Body() dto: AuthDto): Promise<{ access_token: string }> {
     return this.authService.signup(dto);
   }
-  
+  @UseGuards(NotDeletedUserGuard)
   @Delete(':id')
   @ApiOkResponse({
     description: 'Are You Sure Wanna Delete.',
@@ -48,7 +49,7 @@ export default class UserController {
     const userId = parseInt(id, 10);
     return this.userService.deleteUser(userId, user.sub);
   }
-  
+  @UseGuards(NotDeletedUserGuard)
   @Get()
   @ApiOkResponse({
     type: [CreatedUser],
@@ -56,7 +57,7 @@ export default class UserController {
   async getAllPosts(): Promise<CreatedUser[]> {
     return this.userService.getAllUsers();
   }
- 
+  @UseGuards(NotDeletedUserGuard)
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -66,7 +67,7 @@ export default class UserController {
     const userId = parseInt(id, 10);
     return this.userService.updateUser(userId, dto, user.sub);
   }
-
+  @UseGuards(DeletedUserGuard)
   @Patch('restore/:id')
   async restoreUser(
     @Param('id') id: string,

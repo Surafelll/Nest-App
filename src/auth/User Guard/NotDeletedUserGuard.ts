@@ -5,6 +5,7 @@ export class NotDeletedUserGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    return user && user.deletedAt === null;
+    return user && user.deletedAt !== null;
+    
   }
 }
