@@ -1,0 +1,25 @@
+export default {
+    NOT_FOUND: 'Resource not found',
+    DATABASE_CONNECTION_ERROR: 'Database connection error',
+    EXISTS: 'Resource already exists',
+    UNAUTHORIZED: 'Unauthorized access',
+    FORBIDDEN: 'You do not have permission to perform this action',
+    VALIDATION_ERROR: 'Validation error',
+    UNKNOWN_ERROR: 'Something went wrong',
+    TIMEOUT_ERROR: 'Request timed out',
+    CONFLICT: 'Conflict with the current state of the resource',
+    BAD_REQUEST: 'Bad request',
+    INTERNAL_SERVER_ERROR: 'Internal server error',
+    SERVICE_UNAVAILABLE: 'Service temporarily unavailable',
+    UNPROCESSABLE_ENTITY: 'Unprocessable entity',
+    METHOD_NOT_ALLOWED: 'Method not allowed',
+    RATE_LIMIT_EXCEEDED: 'Rate limit exceeded',
+    PAYLOAD_TOO_LARGE: 'Payload too large',
+    FILE_TOO_LARGE: 'File size exceeds the maximum allowed limit',
+    UNSUPPORTED_FILE_TYPE: 'Unsupported file type',
+    PAYMENT_REQUIRED: 'Payment is required to access this resource',
+    ACCOUNT_LOCKED: 'Your account has been locked, please contact support',
+    INVALID_CREDENTIALS: 'Invalid username or password',
+    TEST:'TEST'
+  };
+  
